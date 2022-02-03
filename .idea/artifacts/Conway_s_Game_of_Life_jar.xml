@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Conway's Game of Life:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Conway_s_Game_of_Life_jar</output-path>
+    <root id="archive" name="Conway's Game of Life.jar">
+      <element id="module-output" name="Conway's Game of Life" />
+    </root>
+  </artifact>
+</component>
