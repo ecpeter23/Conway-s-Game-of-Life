@@ -9,3 +9,5 @@ Controls:
 
 Issues:
 - Fullscreen doesn't work right now
+
+JAR Build: out/artifacts/Conway_s_Game_of_Life_jar/Conway's Game of Life.jar
