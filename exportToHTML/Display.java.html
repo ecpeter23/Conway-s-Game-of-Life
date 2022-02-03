@@ -1,0 +1,246 @@
+<html>
+<head>
+<title>Display.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #ed864a;}
+.s1 { color: #ebebeb;}
+.s2 { color: #ed864a; font-weight: bold;}
+.s3 { color: #33ccff; font-weight: bold;}
+.s4 { color: #7ec3e6;}
+.s5 { color: #54b33e;}
+</style>
+</head>
+<body bgcolor="#131314">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Display.java</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">javax.swing.*</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java.awt.*</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java.awt.event.MouseAdapter</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java.awt.event.MouseEvent</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java.util.HashMap</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java.util.Map</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">Display </span><span class="s0">extends </span><span class="s1">JPanel </span><span class="s0">implements </span><span class="s1">Runnable {</span>
+    <span class="s1">Thread thread</span><span class="s2">;</span>
+
+    <span class="s0">int </span><span class="s1">state = </span><span class="s3">0</span><span class="s2">;</span>
+    <span class="s0">final int </span><span class="s1">tileSize = </span><span class="s3">5</span><span class="s2">;</span>
+    <span class="s0">int </span><span class="s1">visibleMapSizeX</span><span class="s2">;</span>
+    <span class="s0">int </span><span class="s1">visibleMapSizeY</span><span class="s2">;</span>
+
+    <span class="s1">HashMap&lt;Point</span><span class="s2">, </span><span class="s1">Boolean&gt; cellState = </span><span class="s0">new </span><span class="s1">HashMap&lt;&gt;()</span><span class="s2">;</span>
+
+    <span class="s4">// Camera offset</span>
+    <span class="s0">int </span><span class="s1">offsetX</span><span class="s2">;</span>
+    <span class="s0">int </span><span class="s1">offsetY</span><span class="s2">;</span>
+
+    <span class="s0">int </span><span class="s1">FPS = </span><span class="s3">60</span><span class="s2">; </span><span class="s4">// FPS</span>
+    <span class="s0">int </span><span class="s1">tps = </span><span class="s3">5</span><span class="s2">; </span><span class="s4">// ticks per second</span>
+    <span class="s0">int </span><span class="s1">ticks = </span><span class="s3">0</span><span class="s2">;</span>
+
+    <span class="s0">boolean </span><span class="s1">mouseClicked = </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s1">Point mousePos</span><span class="s2">;</span>
+
+    <span class="s0">public </span><span class="s1">Display(</span><span class="s0">int </span><span class="s1">width</span><span class="s2">, </span><span class="s0">int </span><span class="s1">height){</span>
+        <span class="s0">this</span><span class="s1">.setPreferredSize(</span><span class="s0">new </span><span class="s1">Dimension(width</span><span class="s2">, </span><span class="s1">height))</span><span class="s2">;</span>
+        <span class="s1">visibleMapSizeX = (</span><span class="s0">int</span><span class="s1">)(width/(</span><span class="s0">double</span><span class="s1">)tileSize)</span><span class="s2">;</span>
+        <span class="s1">visibleMapSizeY = (</span><span class="s0">int</span><span class="s1">)(height/(</span><span class="s0">double</span><span class="s1">)tileSize)</span><span class="s2">;</span>
+
+        <span class="s0">this</span><span class="s1">.setBackground(Color.white)</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s1">.setDoubleBuffered(</span><span class="s0">true</span><span class="s1">)</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s1">.addMouseListener(</span><span class="s0">new </span><span class="s1">MouseAdapter() {</span>
+            <span class="s1">@Override</span>
+            <span class="s0">public void </span><span class="s1">mousePressed(MouseEvent e) {</span>
+                <span class="s0">super</span><span class="s1">.mousePressed(e)</span><span class="s2">;</span>
+
+                <span class="s1">mouseClicked = </span><span class="s0">true</span><span class="s2">;</span>
+                <span class="s1">mousePos = </span><span class="s0">new </span><span class="s1">Point(e.getX()</span><span class="s2">, </span><span class="s1">e.getY())</span><span class="s2">;</span>
+            <span class="s1">}</span>
+        <span class="s1">})</span><span class="s2">;</span>
+
+        <span class="s1">offsetX = </span><span class="s3">0</span><span class="s2">;</span>
+        <span class="s1">offsetY = </span><span class="s3">0</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">public void </span><span class="s1">start(){</span>
+        <span class="s1">thread = </span><span class="s0">new </span><span class="s1">Thread(</span><span class="s0">this</span><span class="s1">)</span><span class="s2">;</span>
+        <span class="s1">thread.start()</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">run() {</span>
+        <span class="s1">System.out.println(</span><span class="s5">&quot;Running&quot;</span><span class="s1">)</span><span class="s2">;</span>
+
+        <span class="s0">double </span><span class="s1">drawInterval = </span><span class="s3">1000000000</span><span class="s1">/FPS</span><span class="s2">;</span>
+        <span class="s0">double </span><span class="s1">nextDrawTime = System.nanoTime() + drawInterval</span><span class="s2">;</span>
+
+        <span class="s0">while </span><span class="s1">(thread != </span><span class="s0">null</span><span class="s1">){ </span><span class="s4">// game loop</span>
+
+            <span class="s0">if </span><span class="s1">(Keyboard.isKeyPressed(</span><span class="s3">10</span><span class="s1">)) state = (state + </span><span class="s3">1</span><span class="s1">) % </span><span class="s3">2</span><span class="s2">;</span>
+
+            <span class="s0">if </span><span class="s1">(mouseClicked){</span>
+                <span class="s0">int </span><span class="s1">tempMouseX = (</span><span class="s0">int</span><span class="s1">)(mousePos.x / (</span><span class="s0">double</span><span class="s1">)tileSize) + offsetX</span><span class="s2">;</span>
+                <span class="s0">int </span><span class="s1">tempMouseY = (</span><span class="s0">int</span><span class="s1">)(mousePos.y / (</span><span class="s0">double</span><span class="s1">)tileSize) + offsetY</span><span class="s2">;</span>
+                <span class="s1">Point tempMousePoint = </span><span class="s0">new </span><span class="s1">Point(tempMouseX</span><span class="s2">, </span><span class="s1">tempMouseY)</span><span class="s2">;</span>
+
+                <span class="s0">if </span><span class="s1">(cellState.containsKey(tempMousePoint)){</span>
+                    <span class="s0">if </span><span class="s1">(cellState.get(tempMousePoint)){</span>
+                        <span class="s1">cellState.replace(tempMousePoint</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)</span><span class="s2">;</span>
+                    <span class="s1">} </span><span class="s0">else</span><span class="s1">{</span>
+                        <span class="s1">cellState.replace(tempMousePoint</span><span class="s2">, </span><span class="s0">true</span><span class="s1">)</span><span class="s2">;</span>
+                    <span class="s1">}</span>
+                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                    <span class="s1">cellState.putIfAbsent(tempMousePoint</span><span class="s2">, </span><span class="s0">true</span><span class="s1">)</span><span class="s2">;</span>
+                <span class="s1">}</span>
+
+                <span class="s1">mouseClicked = </span><span class="s0">false</span><span class="s2">;</span>
+            <span class="s1">}</span>
+
+            <span class="s0">switch </span><span class="s1">(state) {</span>
+                <span class="s0">case </span><span class="s3">0</span><span class="s1">:</span>
+                    <span class="s0">break</span><span class="s2">;</span>
+                <span class="s0">case </span><span class="s3">1</span><span class="s1">:</span>
+                    <span class="s1">ticks = (ticks + </span><span class="s3">1</span><span class="s1">) % (FPS/tps)</span><span class="s2">;</span>
+                    <span class="s0">if </span><span class="s1">(ticks == </span><span class="s3">0</span><span class="s1">) update()</span><span class="s2">;</span>
+                    <span class="s0">break</span><span class="s2">;</span>
+            <span class="s1">}</span>
+
+            <span class="s1">getMovement()</span><span class="s2">;</span>
+
+            <span class="s1">repaint()</span><span class="s2">;</span>
+
+            <span class="s0">try </span><span class="s1">{</span>
+                <span class="s0">double </span><span class="s1">remainingTime = nextDrawTime - System.nanoTime()</span><span class="s2">;</span>
+                <span class="s1">remainingTime = clamp0(remainingTime / </span><span class="s3">1000000</span><span class="s1">)</span><span class="s2">;</span>
+
+                <span class="s1">Thread.sleep((</span><span class="s0">long</span><span class="s1">)remainingTime)</span><span class="s2">;</span>
+
+                <span class="s1">nextDrawTime += drawInterval</span><span class="s2">;</span>
+            <span class="s1">} </span><span class="s0">catch </span><span class="s1">(InterruptedException e) {</span>
+                <span class="s1">e.printStackTrace()</span><span class="s2">;</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">paint(Graphics g){</span>
+        <span class="s4">// System.out.println(&quot;Painting&quot;);</span>
+
+        <span class="s1">Graphics2D graphics = (Graphics2D) g</span><span class="s2">;</span>
+
+        <span class="s0">for </span><span class="s1">(</span><span class="s0">int </span><span class="s1">y = </span><span class="s3">0</span><span class="s2">; </span><span class="s1">y &lt; visibleMapSizeY</span><span class="s2">; </span><span class="s1">y++){</span>
+            <span class="s0">for </span><span class="s1">(</span><span class="s0">int </span><span class="s1">x = </span><span class="s3">0</span><span class="s2">; </span><span class="s1">x &lt; visibleMapSizeX</span><span class="s2">; </span><span class="s1">x++){</span>
+                <span class="s0">int </span><span class="s1">baseX = x + Math.round(offsetX)</span><span class="s2">;</span>
+                <span class="s0">int </span><span class="s1">baseY = y + Math.round(offsetY)</span><span class="s2">;</span>
+                <span class="s1">Point point = </span><span class="s0">new </span><span class="s1">Point(baseX</span><span class="s2">, </span><span class="s1">baseY)</span><span class="s2">;</span>
+
+                <span class="s4">//System.out.println(point);</span>
+
+                <span class="s0">if </span><span class="s1">(cellState.getOrDefault(point</span><span class="s2">, </span><span class="s0">false</span><span class="s1">) ){</span>
+                    <span class="s4">//System.out.println(&quot;Should be Black&quot;);</span>
+                    <span class="s1">graphics.setColor(Color.BLACK)</span><span class="s2">;</span>
+                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                    <span class="s1">graphics.setColor(Color.white)</span><span class="s2">;</span>
+                <span class="s1">}</span>
+
+                <span class="s1">graphics.fillRect(x * tileSize</span><span class="s2">, </span><span class="s1">y * tileSize</span><span class="s2">, </span><span class="s1">tileSize</span><span class="s2">, </span><span class="s1">tileSize)</span><span class="s2">;</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+
+        <span class="s1">graphics.dispose()</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">public void </span><span class="s1">update(){</span>
+        <span class="s1">HashMap&lt;Point</span><span class="s2">, </span><span class="s1">Boolean&gt; tempCellState = </span><span class="s0">new </span><span class="s1">HashMap&lt;&gt;(cellState)</span><span class="s2">;</span>
+
+        <span class="s0">for </span><span class="s1">(Map.Entry&lt;Point</span><span class="s2">, </span><span class="s1">Boolean&gt; entry : cellState.entrySet()) {</span>
+            <span class="s0">if </span><span class="s1">(entry.getValue()){</span>
+                <span class="s0">if </span><span class="s1">(getNeighbors(entry.getKey()) == </span><span class="s3">2 </span><span class="s1">|| getNeighbors(entry.getKey()) == </span><span class="s3">3</span><span class="s1">){</span>
+                    <span class="s1">tempCellState.replace(entry.getKey()</span><span class="s2">, </span><span class="s0">true</span><span class="s1">)</span><span class="s2">;</span>
+                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                    <span class="s1">tempCellState.replace(entry.getKey()</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)</span><span class="s2">;</span>
+                <span class="s1">}</span>
+
+                <span class="s1">getDeadNeighbors(tempCellState</span><span class="s2">, </span><span class="s1">entry.getKey())</span><span class="s2">;</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+
+        <span class="s1">cellState = tempCellState</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">public void </span><span class="s1">getMovement(){</span>
+        <span class="s0">if </span><span class="s1">(Keyboard.isKeyPressed(</span><span class="s3">87</span><span class="s1">)){ </span><span class="s4">// w</span>
+            <span class="s1">offsetY -= </span><span class="s3">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">if </span><span class="s1">(Keyboard.isKeyPressed(</span><span class="s3">83</span><span class="s1">)){ </span><span class="s4">// s</span>
+            <span class="s1">offsetY += </span><span class="s3">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">if </span><span class="s1">(Keyboard.isKeyPressed(</span><span class="s3">65</span><span class="s1">)){ </span><span class="s4">// a</span>
+            <span class="s1">offsetX -= </span><span class="s3">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">if </span><span class="s1">(Keyboard.isKeyPressed(</span><span class="s3">68</span><span class="s1">)){ </span><span class="s4">// d</span>
+            <span class="s1">offsetX += </span><span class="s3">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">if </span><span class="s1">(Keyboard.isKeyPressed(</span><span class="s3">38</span><span class="s1">)){ </span><span class="s4">// up</span>
+            <span class="s1">tps += </span><span class="s3">1</span><span class="s2">;</span>
+            <span class="s0">if </span><span class="s1">(tps &gt; </span><span class="s3">20</span><span class="s1">) tps = </span><span class="s3">20</span><span class="s2">;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">if </span><span class="s1">(Keyboard.isKeyPressed(</span><span class="s3">40</span><span class="s1">)){ </span><span class="s4">// down</span>
+            <span class="s1">tps -= </span><span class="s3">1</span><span class="s2">;</span>
+            <span class="s0">if </span><span class="s1">(tps &lt; </span><span class="s3">1</span><span class="s1">) tps = </span><span class="s3">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">getDeadNeighbors(HashMap&lt;Point</span><span class="s2">, </span><span class="s1">Boolean&gt; map</span><span class="s2">, </span><span class="s1">Point point){</span>
+        <span class="s0">for </span><span class="s1">(</span><span class="s0">int </span><span class="s1">y = -</span><span class="s3">1</span><span class="s2">; </span><span class="s1">y &lt;= </span><span class="s3">1</span><span class="s2">; </span><span class="s1">y++) {</span>
+            <span class="s0">for </span><span class="s1">(</span><span class="s0">int </span><span class="s1">x = -</span><span class="s3">1</span><span class="s2">; </span><span class="s1">x &lt;= </span><span class="s3">1</span><span class="s2">; </span><span class="s1">x++) {</span>
+                <span class="s0">if </span><span class="s1">(x == </span><span class="s3">0 </span><span class="s1">&amp;&amp; y == </span><span class="s3">0</span><span class="s1">) </span><span class="s0">continue</span><span class="s2">;</span>
+
+                <span class="s1">Point tempPoint = </span><span class="s0">new </span><span class="s1">Point(point.x + x</span><span class="s2">, </span><span class="s1">point.y + y)</span><span class="s2">;</span>
+                <span class="s0">if </span><span class="s1">(!cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(tempPoint.x</span><span class="s2">, </span><span class="s1">tempPoint.y)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">) &amp;&amp; getNeighbors(</span><span class="s0">new </span><span class="s1">Point(tempPoint.x</span><span class="s2">, </span><span class="s1">tempPoint.y)) == </span><span class="s3">3</span><span class="s1">) {</span>
+                    <span class="s0">if </span><span class="s1">(map.containsKey(tempPoint)) {</span>
+                        <span class="s1">map.replace(tempPoint</span><span class="s2">, </span><span class="s0">true</span><span class="s1">)</span><span class="s2">;</span>
+                    <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                        <span class="s1">map.putIfAbsent(tempPoint</span><span class="s2">, </span><span class="s0">true</span><span class="s1">)</span><span class="s2">;</span>
+                    <span class="s1">}</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+
+    <span class="s1">}</span>
+
+    <span class="s0">private int </span><span class="s1">getNeighbors(Point point){</span>
+        <span class="s0">int </span><span class="s1">count = </span><span class="s3">0</span><span class="s2">;</span>
+
+        <span class="s0">if </span><span class="s1">(cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(point.x - </span><span class="s3">1</span><span class="s2">, </span><span class="s1">point.y)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)) count++</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s1">(cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(point.x + </span><span class="s3">1</span><span class="s2">, </span><span class="s1">point.y)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)) count++</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s1">(cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(point.x</span><span class="s2">, </span><span class="s1">point.y - </span><span class="s3">1</span><span class="s1">)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)) count++</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s1">(cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(point.x</span><span class="s2">, </span><span class="s1">point.y + </span><span class="s3">1</span><span class="s1">)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)) count++</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s1">(cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(point.x - </span><span class="s3">1</span><span class="s2">, </span><span class="s1">point.y - </span><span class="s3">1</span><span class="s1">)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)) count++</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s1">(cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(point.x + </span><span class="s3">1</span><span class="s2">, </span><span class="s1">point.y - </span><span class="s3">1</span><span class="s1">)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)) count++</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s1">(cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(point.x - </span><span class="s3">1</span><span class="s2">, </span><span class="s1">point.y + </span><span class="s3">1</span><span class="s1">)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)) count++</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s1">(cellState.getOrDefault(</span><span class="s0">new </span><span class="s1">Point(point.x + </span><span class="s3">1</span><span class="s2">, </span><span class="s1">point.y + </span><span class="s3">1</span><span class="s1">)</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)) count++</span><span class="s2">;</span>
+
+        <span class="s0">return </span><span class="s1">count</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private double </span><span class="s1">clamp0(</span><span class="s0">double </span><span class="s1">value){</span>
+        <span class="s0">if </span><span class="s1">(value &lt; </span><span class="s3">0</span><span class="s1">){</span>
+            <span class="s0">return </span><span class="s3">0</span><span class="s2">;</span>
+        <span class="s1">} </span><span class="s0">else</span><span class="s1">{</span>
+            <span class="s0">return </span><span class="s1">value</span><span class="s2">;</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

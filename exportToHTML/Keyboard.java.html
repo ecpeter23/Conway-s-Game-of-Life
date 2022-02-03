@@ -1,0 +1,42 @@
+<html>
+<head>
+<title>Keyboard.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #ed864a;}
+.s1 { color: #ebebeb;}
+.s2 { color: #ed864a; font-weight: bold;}
+.s3 { color: #7ec3e6;}
+</style>
+</head>
+<body bgcolor="#131314">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Keyboard.java</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">java.awt.*</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java.awt.event.KeyEvent</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java.util.HashMap</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java.util.Map</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">Keyboard {</span>
+
+    <span class="s0">private static final </span><span class="s1">Map&lt;Integer</span><span class="s2">, </span><span class="s1">Boolean&gt; pressedKeys = </span><span class="s0">new </span><span class="s1">HashMap&lt;&gt;()</span><span class="s2">;</span>
+
+    <span class="s0">static </span><span class="s1">{</span>
+        <span class="s1">KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(event -&gt; {</span>
+            <span class="s0">synchronized </span><span class="s1">(Keyboard.</span><span class="s0">class</span><span class="s1">) {</span>
+                <span class="s0">if </span><span class="s1">(event.getID() == KeyEvent.KEY_PRESSED) pressedKeys.put(event.getKeyCode()</span><span class="s2">, </span><span class="s0">true</span><span class="s1">)</span><span class="s2">;</span>
+                <span class="s0">else if </span><span class="s1">(event.getID() == KeyEvent.KEY_RELEASED) pressedKeys.put(event.getKeyCode()</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)</span><span class="s2">;</span>
+                <span class="s0">return false</span><span class="s2">;</span>
+            <span class="s1">}</span>
+        <span class="s1">})</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">public static boolean </span><span class="s1">isKeyPressed(</span><span class="s0">int </span><span class="s1">keyCode) { </span><span class="s3">// Any key code from the KeyEvent class</span>
+        <span class="s0">return </span><span class="s1">pressedKeys.getOrDefault(keyCode</span><span class="s2">, </span><span class="s0">false</span><span class="s1">)</span><span class="s2">;</span>
+    <span class="s1">}</span>
+<span class="s1">}</span></pre>
+</body>
+</html>
